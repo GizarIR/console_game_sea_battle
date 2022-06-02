@@ -1921,6 +1921,9 @@ sp = [1, 20, 1, 4, 7, 3]
 print(f(sp))
 print(g(123))
 
+
+# КЛАССЫ
+
 class User:
     pass
 
