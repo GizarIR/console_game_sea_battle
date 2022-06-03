@@ -7,22 +7,28 @@
 # 5 | О | О | О | О | ■ | О |
 # 6 | ■ | О | ■ | О | О | О |
 
-# Обработка исключения: Вышли за пределы поля
 class BoardOutException(Exception):
+    """Обработка исключения: Вышли за пределы поля"""
     pass
 
 
-# Обработка исключения: Поле на доске занято
 class BoardDotOccupied(Exception):
+    """Обработка исключения: Поле на доске занято"""
     pass
 
 
-# Обработка исключения: Координата должна быть целое число
 class TypeCoordException(Exception):
+    """Обработка исключения: Координата должна быть целое число"""
     pass
 
-# Описание класса Точка на доске
+
+class TypeDotException(Exception):
+    """Обработка исключения: Объект не является типом Dot"""
+    pass
+
+
 class Dot:
+    """Базовый класс: Точка на доске"""
     def __init__(self, x, y):
         self.__x = x
         self.__y = y
@@ -47,17 +53,52 @@ class Dot:
     def __eq__(self, other):
         return True if self.__x == other.__x and self.__y == other.__y else False
 
-# Описание класса Ship - Корабль на доске
+
 class Ship:
-    def __init__(self, length, dot_top, position, health):
-        self.length = length
-        self.dot_top = dot_top
-        self.position = position
-        self.health = health
+    """Базовый класс: Ship - Корабль на доске"""
+    __positions = ('vert', 'horiz')
 
-    def get_length(self):
-        return self.length
+    def __init__(self, length, dot_top, position):
+        self.__length = length
+        self.__dot_top = dot_top
+        self.__position = position
+        self.__health = self.dots()
 
-    # возвращает список не подбитых точек корабля
+    # возвращает список всех точек корабля
     def dots(self):
-        pass
+        if self.__position == 'horiz':
+            return [Dot(self.__dot_top.get_coord()[0], x) for x in range(1, self.__length+1)]
+        else:
+            return [Dot(x, self.__dot_top.get_coord()[0]) for x in range(1, self.__length + 1)]
+
+    # возвращает кортеж с описанием корабля
+    def get_ship(self):
+        return self.__length, self.__dot_top.get_coord(), self.__position, [x.get_coord() for x in self.__health]
+
+    # удаляет точку из списка здоровья корабля
+    def set_health(self, dot_):
+        try:
+            if isinstance(dot_, Dot):
+                if dot_ in self.__health:
+                    self.__health.remove(dot_)
+                else:
+                    print(f'Точка {dot_.get_coord()} не принадлежит кораблю')
+            else:
+                raise TypeDotException
+        except TypeDotException:
+            print(f'Не верный тип данных в переменной {dot_}. Требуется Dot')
+
+
+
+
+
+dot_1 = Dot(1, 2)
+# print(dot_1.get_coord()[0])
+
+ship_1 = Ship(4, Dot(1, 1), "horiz")
+
+print(ship_1.get_ship())
+
+ship_1.set_health(dot_1)
+
+print(ship_1.get_ship())
