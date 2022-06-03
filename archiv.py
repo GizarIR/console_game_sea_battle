@@ -2281,3 +2281,18 @@ else:
 finally:
     print('Выход из программы')
 
+# проверка класса Dot
+dot_1 = Dot(1, 1)
+dot_2 = Dot(1, 1)
+print(dot_1.get_coord())
+print(dot_1 == dot_2)
+# print(Dot.check_value(7))
+dot_1.set_coord(4, 3)
+print(dot_1.get_coord())
+print(dot_1 == dot_2)
+dot_3 = Dot(5, 3)
+l_ = [dot_1, dot_2]
+if dot_3 in l_:
+    print("Ура точка в списке")
+else:
+    print("Не попал")
