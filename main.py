@@ -68,10 +68,12 @@ class Ship:
     def dots(self):
         start_x = self.__dot_top.get_coord()[0]
         start_y = self.__dot_top.get_coord()[1]
+        end_y = start_y + self.__length
+        end_x = start_x + self.__length
         if self.__position == 'horiz':
-            return [Dot(self.__dot_top.get_coord()[0], x) for x in range(start_x, start_x + self.__length)]
+            return [Dot(self.__dot_top.get_coord()[0], y) for y in range(start_y, end_y)]
         else:
-            return [Dot(x, self.__dot_top.get_coord()[0]) for x in range(start_y, start_y + self.__length)]
+            return [Dot(x, self.__dot_top.get_coord()[1]) for x in range(start_x, end_x)]
 
     # возвращает кортеж с описанием корабля
     def get_ship(self):
@@ -93,10 +95,21 @@ class Ship:
 class Board:
     """Базовый класс: Board - Доска для игры в морской бой"""
     def __init__(self):
-        self.__b_status = [["0" for y in range(6)] for x in range(6)]
+        self.__b_status = [["O" for y in range(6)] for x in range(6)]
         self.__ships = []  # список объектов типа Ship
-        self.__hid = True  # должно быть bool
+        self.__hid = False  # должно быть bool
         self.__num_live_ship = 0  # количество живых кораблей
+
+    # сеттер для защищенного атрибута __hid
+    def set_hid(self, value):
+        try:
+            if isinstance(value, bool):
+                self.__hid = value
+            else:
+                raise TypeError
+        except TypeError as e:
+            print('Функции set_hid требуется значение типа Bool')
+
 
     # добавляем корабль на доску
     def add_ship(self, ship_):
@@ -108,42 +121,50 @@ class Board:
     @staticmethod
     def contour(ship_):
         contour_ = []
-        max_x_ = None
-        max_y = None
+        min_x, min_y, max_x, max_y = None, None, None, None
         for desk in ship_.get_ship()[3]:
-            max_x = desk[0] + 2 if desk[0] + 2 < 6 else 6
-            max_y = desk[1] + 2 if desk[1] + 2 < 6 else 6
-            x = desk[0]
-            y = desk[1]
-            for i in range(x - 1, max_x + 1):
-                for j in range(y - 1, max_y + 1):
+            max_x = desk[0] + 1 if desk[0] + 1 < 6 else 6
+            max_y = desk[1] + 1 if desk[1] + 1 < 6 else 6
+            min_x = desk[0] - 1 if desk[0] - 1 > 1 else 1
+            min_y = desk[0] - 1 if desk[0] - 1 > 1 else 1
+            for i in range(min_x, max_x + 1):
+                for j in range(min_y, max_y + 1):
                     if Dot(i, j) not in contour_:
                         contour_.append(Dot(i, j))
                     else:
                         continue
         return contour_
 
-    # отрисовываем поле боя
+    # отрисовываем поле боя в зависимости от значения __hid
     def show(self):
         board_show = ""
+        line_in_board = []
         count = 1
         board_show = "    " + " | ".join([str(x) for x in range(1, 6 + 1)]) + "\n"
-        for i in self.__b_status:
-            board_show += str(count) + " | " + " | ".join(i) + " \n"
-            count += 1
+        for line in self.__b_status:
+            line_in_board = []
+            if not self.__hid:
+                board_show += str(count) + " | " + " | ".join(line) + " \n"
+                count += 1
+            else:
+                line_in_board = ["O" if x == "■" else x for x in line]
+                board_show += str(count) + " | " + " | ".join(line_in_board) + " \n"
+                count += 1
         return board_show
 
 
 dot_1 = Dot(1, 1)
-# print(dot_1.get_coord()[0])
-# проверить добавление корабля!!!
-ship_1 = Ship(1, Dot(3, 4), "horiz")
+
+ship_1 = Ship(2, Dot(1, 1), "vert")
 
 print(ship_1.get_ship())
 
 board_1 = Board()
-print(board_1.show())
+# print(board_1.show())
 
 board_1.add_ship(ship_1)
+ship_2 = Ship(4, Dot(3, 3), "horiz")
+board_1.add_ship(ship_2)
 print(board_1.show())
 print([x.get_coord() for x in board_1.contour(ship_1)])
+
