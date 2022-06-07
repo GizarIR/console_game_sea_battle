@@ -56,7 +56,7 @@ class Dot:
 
 class Ship:
     """Базовый класс: Ship - Корабль на доске"""
-    __positions = ('vert', 'horiz')
+    # __positions = ('vert', 'horiz')
 
     def __init__(self, length, dot_top, position):
         self.__length = length
@@ -70,6 +70,7 @@ class Ship:
         start_y = self.__dot_top.get_coord()[1]
         end_y = start_y + self.__length
         end_x = start_x + self.__length
+
         if self.__position == 'horiz':
             return [Dot(self.__dot_top.get_coord()[0], y) for y in range(start_y, end_y)]
         else:
@@ -98,9 +99,9 @@ class Board:
 
     def __init__(self):
         self.__b_status = [["O" for y in range(6)] for x in range(6)]
-        self.__ships = []  # список объектов типа Ship
+        self.ships = []  # список объектов типа Ship
         self.__hid = False  # должно быть bool
-        self.__num_live_ship = 0  # количество живых кораблей
+        self.num_live_ship = 0  # количество живых кораблей
 
     # сеттер для защищенного атрибута __hid
     def set_hid(self, value):
@@ -116,17 +117,19 @@ class Board:
     def add_ship(self, ship_):
         for desk in ship_.get_ship()[3]:
             self.__b_status[desk[0] - 1][desk[1] - 1] = "■"
+        self.ships.append(ship_)
+
 
     # обводим контур кораблю на игровой доске - получаем список точек Dot куда нельзя ставить корабль
-    # @staticmethod
-    def contour(self, ship_):
+    @staticmethod
+    def contour(ship_):
         contour_ = []
         min_x, min_y, max_x, max_y = None, None, None, None
         for desk in ship_.get_ship()[3]:
-            max_x = desk[0] + 1 if desk[0] + 1 < self.__max_board_xy else self.__max_board_xy
-            max_y = desk[1] + 1 if desk[1] + 1 < self.__max_board_xy else self.__max_board_xy
+            max_x = desk[0] + 1 if desk[0] + 1 < 6 else 6
+            max_y = desk[1] + 1 if desk[1] + 1 < 6 else 6
             min_x = desk[0] - 1 if desk[0] - 1 > 1 else 1
-            min_y = desk[0] - 1 if desk[0] - 1 > 1 else 1
+            min_y = desk[1] - 1 if desk[1] - 1 > 1 else 1
             for i in range(min_x, max_x + 1):
                 for j in range(min_y, max_y + 1):
                     if Dot(i, j) not in contour_:
@@ -221,7 +224,7 @@ class Player:
 
 
 class User(Player):
-    """Класс потомок от Player: Игорок человек, вводим данные с консоли"""
+    """Класс потомок от Player: Игрок человек, вводим данные с консоли"""
     @classmethod
     def right_enter(cls, str_):
         if str_ is None:
@@ -241,7 +244,7 @@ class User(Player):
             return False
 
     def ask(self):
-        shot_str = " "
+        shot_str = ""
         right_shot = False
         while not right_shot:
             shot_str = input("Введите координаты выстрела через пробел (пример: 1 2): ")
@@ -250,31 +253,158 @@ class User(Player):
         return Dot(int(shot_[0]), int(shot_[1]))
 
 class Ai(Player):
+    """Класс потомок от Player: Игрок компьютер, вводим данные по генератору случайных чисел"""
     def ask(self):
         x = randint(1, 6)
         y = randint(1, 6)
         return Dot(x, y)
 
 
-ship_1 = Ship(2, Dot(1, 1), "vert")
+class Game:
+    """Базовый класс Game: Описывает логику игры"""
+    __positions = ['vert', 'horiz']
 
-print(ship_1.get_ship())
+    def __init__(self):
+        self.__user_board = Board()
+        self.__ai_board = Board()
+        self.__user = User(self.__user_board, self.__ai_board )
+        self.__ai = Ai(self.__ai_board, self.__user_board)
 
-board_1 = Board()
-board_2 = Board()
+    @staticmethod
+    def __check_ship(board_, candidate):
+        if candidate == []:
+            return False
+        else:
+            if candidate[3] == "horiz" and candidate[2] + candidate[0] <= 6:
+                temp_ship = Ship(candidate[0], Dot(candidate[1], candidate[2]), candidate[3])
+                for ship_ in board_.ships:
+                    temp_contour = Board.contour(ship_)
+                    t_l_ = [x.get_coord() for x in temp_contour]
+                    for dot_ in temp_contour:
+                        t_d_ = dot_.get_coord()
+                        t_s_ = [x.get_coord() for x in temp_ship.dots()]
+                        if dot_ in temp_ship.dots():
+                            del temp_ship
+                            return False
+                return True
+            elif candidate[3] == "vert" and candidate[1] + candidate[0] <= 6:
+                temp_ship = Ship(candidate[0], Dot(candidate[1], candidate[2]), candidate[3])
+                for ship_ in board_.ships:
+                    temp_contour = Board.contour(ship_)
+                    for dot_ in temp_contour:
+                        if dot_ in temp_ship.dots():
+                            del temp_ship
+                            return False
+                return True
+            else:
+                return False
+
+
+
+    # генератор случайных досок. 1 корабль на 3 клетки, 2 корабля на 2 клетки, 4 корабля на одну клетку.
+    def random_board(self):
+        # создадим доску для человека
+        count = 0
+        candidate_ship = []
+        num_ship = [0, 3, 2, 0, 1]  # количество кораблей (значение элемента) в зависимости от количества палуб (индекс)
+        break_point = False
+        board_created = False
+        while not break_point and not board_created:
+            for i in range(4, 0, -1):
+                if break_point:
+                    break_point = False
+                    break
+                for j in range(1, num_ship[i] + 1):
+                    # подбор кандидата
+                    while not Game.__check_ship(self.__user_board, candidate_ship) and count <= 10000:
+                        candidate_ship = [i, randint(1, 6), randint(1, 6), choice(self.__positions)]
+                        count += 1
+                    # размещение на доске корабля
+                    if count != 10000:
+                        ship_temp = Ship(i, Dot(candidate_ship[1], candidate_ship[2]), candidate_ship[3])
+                        str_ = ship_temp.get_ship()
+                        self.__user_board.add_ship(ship_temp)
+                        t_s_ = [x.get_ship() for x in self.__user_board.ships]
+                        self.__user_board.num_live_ship += 1
+                        # print(self.__user_board.show())
+                        count = 0
+                        candidate_ship = []
+                        del ship_temp
+                    else:
+                        del self.__user_board
+                        self.__user_board = Board()
+                        print(self.__user_board.show())
+                        count = 0
+                        candidate_ship = []
+                        del ship_temp
+                        break_point = True
+                        break
+            board_created = True
+        print("Доска для человека")
+        print(self.__user_board.show())
+
+        # создадим доску для AI (компьютера)
+        count = 0
+        candidate_ship = []
+        num_ship = [0, 3, 2, 0, 1]  # количество кораблей (значение элемента) в зависимости от количества палуб (индекс)
+        break_point = False
+        board_created = False
+        while not break_point and not board_created:
+            for i in range(4, 0, -1):
+                if break_point:
+                    break_point = False
+                    break
+                for j in range(1, num_ship[i] + 1):
+                    # подбор кандидата
+                    while not Game.__check_ship(self.__ai_board, candidate_ship) and count <= 10000:
+                        candidate_ship = [i, randint(1, 6), randint(1, 6), choice(self.__positions)]
+                        count += 1
+                    # размещение на доске корабля
+                    if count != 10000:
+                        ship_temp = Ship(i, Dot(candidate_ship[1], candidate_ship[2]), candidate_ship[3])
+                        # str_ = ship_temp.get_ship()
+                        self.__ai_board.add_ship(ship_temp)
+                        # t_s_ = [x.get_ship() for x in self.__user_board.ships]
+                        self.__ai_board.num_live_ship += 1
+                        # print(self.__user_board.show())
+                        count = 0
+                        candidate_ship = []
+                        del ship_temp
+                    else:
+                        del self.__ai_board
+                        self.__ai_board = Board()
+                        print(self.__ai_board.show())
+                        count = 0
+                        candidate_ship = []
+                        del ship_temp
+                        break_point = True
+                        break
+            board_created = True
+        print("Доска для компьютера")
+        print(self.__ai_board.show())
+
+# ship_1 = Ship(2, Dot(1, 1), "vert")
+#
+# print(ship_1.get_ship())
+#
+# board_1 = Board()
+# board_2 = Board()
+# # print(board_1.show())
+#
+# board_1.add_ship(ship_1)
+# ship_2 = Ship(4, Dot(6, 3), "horiz")
+# board_1.add_ship(ship_2)
+# print(board_1.show())
+# print([x.get_coord() for x in board_1.contour(ship_2)])
+
+# dot_1 = Dot(1, 1)
+# ship_3 = Ship(4, Dot(6, 3), "horiz")
+# board_2.add_ship(ship_3)
+# # player_1 = User(board_2, board_1)
+# player_1 = Ai(board_2, board_1)
+# f_1 = player_1.move()
+# print(board_1.shot(dot_1))
 # print(board_1.show())
 
-board_1.add_ship(ship_1)
-ship_2 = Ship(4, Dot(3, 3), "horiz")
-board_1.add_ship(ship_2)
-print(board_1.show())
-print([x.get_coord() for x in board_1.contour(ship_1)])
-
-dot_1 = Dot(1, 1)
-ship_3 = Ship(4, Dot(6, 3), "horiz")
-board_2.add_ship(ship_3)
-# player_1 = User(board_2, board_1)
-player_1 = Ai(board_2, board_1)
-f_1 = player_1.move()
-print(board_1.shot(dot_1))
-print(board_1.show())
+game_1 = Game()
+game_1.random_board()
