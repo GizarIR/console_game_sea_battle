@@ -8,6 +8,7 @@
 # 6 | ■ | О | ■ | О | О | О |
 from random import *
 
+
 class BoardOutException(Exception):
     """Обработка исключения: Вышли за пределы поля"""
     pass
@@ -22,6 +23,7 @@ class TypeCoordException(Exception):
     """Обработка исключения: Координата должна быть целое число"""
     pass
 
+
 class TypeDotException(Exception):
     """Обработка исключения: Объект не является типом Dot"""
     pass
@@ -29,6 +31,7 @@ class TypeDotException(Exception):
 
 class Dot:
     """Базовый класс: Точка на доске"""
+
     def __init__(self, x=None, y=None):
         self.__x = x if self.__check_value(x) else None
         self.__y = y if self.__check_value(y) else None
@@ -56,6 +59,7 @@ class Dot:
 
 class Ship:
     """Базовый класс: Ship - Корабль на доске"""
+
     # __positions = ('vert', 'horiz')
 
     def __init__(self, length, dot_top, position):
@@ -93,6 +97,7 @@ class Ship:
         except TypeDotException:
             print(f'Не верный тип данных в переменной {dot_}. Требуется Dot')
 
+
 class Board:
     """Базовый класс: Board - Доска для игры в морской бой"""
     __max_board_xy = 6
@@ -118,7 +123,6 @@ class Board:
         for desk in ship_.get_ship()[3]:
             self.__b_status[desk[0] - 1][desk[1] - 1] = "■"
         self.ships.append(ship_)
-
 
     # обводим контур кораблю на игровой доске - получаем список точек Dot куда нельзя ставить корабль
     @staticmethod
@@ -172,28 +176,38 @@ class Board:
         try:
             if not self.out(dot_):
                 raise BoardOutException
-            elif self.__b_status[x - 1][y - 1] in ["T", "X"]:
-                raise BoardDotOccupied
-            else:
-                if self.__b_status[x - 1][y - 1] == "■":
-                    self.__b_status[x - 1][y - 1] = "X"
-                    for ship_ in self.ships:
-                        if Dot(x - 1, y - 1) in ship_.__health:
-                            ship_.__health.pop(Dot(x - 1, y - 1))
-                        if ship_.__health == []:
-                            print(f'{ship_.get_ship()[0]}-х палубный корабль подбит ')
-                    player_need_shot = True
-                    return True, player_need_shot
-                else:
-                    self.__b_status[x - 1][y - 1] = "T"
-                    player_need_shot = False
-                    return True, player_need_shot
-        except BoardOutException or BoardDotOccupied:
-            print(f'Точка с координатами ({x}, {y}) уже использована или за пределами поля')
+        except BoardDotOccupied:
+            print(f'Точка с координатами ({x}, {y}) за пределами поля')
             return False, player_need_shot
+
+        try:
+            if self.__b_status[x - 1][y - 1] in ["T", "X"]:
+                raise BoardDotOccupied
+        except BoardDotOccupied:
+            print(f'Точка с координатами ({x}, {y}) уже использована')
+            return False, player_need_shot
+
+        if self.__b_status[x - 1][y - 1] == "■":
+            self.__b_status[x - 1][y - 1] = "X"
+            for ship_ in self.ships:
+                # s_1 = ship_.get_ship()[3]
+                if (x, y) in ship_.get_ship()[3]:
+                    ship_.set_health(Dot(x, y))
+                    # s_2 = ship_.get_ship()[3]
+                if ship_.get_ship()[3] == []:
+                    print(f'\n  Поздравляем!!! {ship_.get_ship()[0]}-х палубный корабль подбит! \n ')
+                    self.num_live_ship -= 1
+            player_need_shot = True
+            return True, player_need_shot
+        else:
+            self.__b_status[x - 1][y - 1] = "T"
+            player_need_shot = False
+            return True, player_need_shot
+
 
 class Player:
     """Базовый класс: Player - Игрок или AI"""
+
     # __need_shot = False # атрибут хранит в себе статус необходимости повторного хода после попадания
 
     def __init__(self, my_board, enemy_board):
@@ -219,14 +233,22 @@ class Player:
     # (например если он выстрелом подбил корабль)
     def move(self):
         result_shot = ()
-        need_shot = False # переменная которая отвечает на вопрос нужно ли делать ход после попадания
-        right_shot = False # переменная для понимания результат выстрела с исключениями или нет
+        need_shot = False  # переменная которая отвечает на вопрос нужно ли делать ход после попадания
+        right_shot = False  # переменная для понимания результат выстрела с исключениями или нет
         while not right_shot:
             dot_shot = self.ask()
             result_shot = self.__enemy_board.shot(dot_shot)
             right_shot, need_shot = result_shot[0], result_shot[1]
         return need_shot
 
+
+class Ai(Player):
+    """Класс потомок от Player: Игрок компьютер, вводим данные по генератору случайных чисел"""
+    def ask(self):
+        x = randint(1, 6)
+        y = randint(1, 6)
+        print(f'Искусственный интеллект делает выстрел по координатам ({x}, {y})... \n')
+        return Dot(x, y)
 
 class User(Player):
     """Класс потомок от Player: Игрок человек, вводим данные с консоли"""
@@ -257,12 +279,8 @@ class User(Player):
         shot_ = shot_str.split(" ")
         return Dot(int(shot_[0]), int(shot_[1]))
 
-class Ai(Player):
-    """Класс потомок от Player: Игрок компьютер, вводим данные по генератору случайных чисел"""
-    def ask(self):
-        x = randint(1, 6)
-        y = randint(1, 6)
-        return Dot(x, y)
+
+
 
 
 class Game:
@@ -270,10 +288,12 @@ class Game:
     __positions = ['vert', 'horiz']
 
     def __init__(self):
-        self.__user_board = Board()
-        self.__ai_board = Board()
-        self.__user = User(self.__user_board, self.__ai_board )
-        self.__ai = Ai(self.__ai_board, self.__user_board)
+        self.user_board = Board()
+        self.ai_board = Board()
+        # self.user = User(self.user_board, self.ai_board )
+        # self.ai = Ai(self.ai_board, self.user_board)
+        self.user = User(Board, Board)
+        self.ai = Ai(Board, Board)
 
     @staticmethod
     def __check_ship(board_, candidate):
@@ -304,8 +324,6 @@ class Game:
             else:
                 return False
 
-
-
     # генератор случайных досок. 1 корабль на 3 клетки, 2 корабля на 2 клетки, 4 корабля на одну клетку.
     def random_board(self):
         print("Пожалуйста, подoждите минутку. Генерируем доски...")
@@ -320,25 +338,25 @@ class Game:
             for i in range(4, 0, -1):
                 for j in range(1, num_ship[i] + 1):
                     # подбор кандидата
-                    while not Game.__check_ship(self.__user_board, candidate_ship) and count <= 1000:
+                    while not Game.__check_ship(self.user_board, candidate_ship) and count <= 1000:
                         candidate_ship = [i, randint(1, 6), randint(1, 6), choice(self.__positions)]
                         count += 1
                     # размещение на доске корабля
                     if count <= 1000:
                         ship_temp = Ship(i, Dot(candidate_ship[1], candidate_ship[2]), candidate_ship[3])
                         # str_ = ship_temp.get_ship()
-                        self.__user_board.add_ship(ship_temp)
-                        # t_s_ = [x.get_ship() for x in self.__user_board.ships]
-                        self.__user_board.num_live_ship += 1
-                        # print(self.__user_board.show())
+                        self.user_board.add_ship(ship_temp)
+                        # t_s_ = [x.get_ship() for x in self.user_board.ships]
+                        self.user_board.num_live_ship += 1
+                        # print(self.user_board.show())
                         count = 0
                         candidate_ship = []
                         del ship_temp
                     else:
-                        del self.__user_board
-                        self.__user_board = Board()
+                        del self.user_board
+                        self.user_board = Board()
                         print(f'Еще одна попытка ({num_gen}) генерации доски для Вас')
-                        # print(self.__user_board.show())
+                        # print(self.user_board.show())
                         num_gen += 1
                         count = 0
                         candidate_ship = []
@@ -352,9 +370,9 @@ class Game:
         num_gen = 1
         print("Доска для Вас сгенерирована.")
         print("Генерируем доску для ИИ...")
-        # print(self.__user_board.show())
+        # print(self.user_board.show())
 
-        #создадим доску для AI (компьютера)
+        # создадим доску для AI (компьютера)
         count = 0
         candidate_ship = []
         break_point = False
@@ -363,26 +381,27 @@ class Game:
             for i in range(4, 0, -1):
                 for j in range(1, num_ship[i] + 1):
                     # подбор кандидата
-                    while not Game.__check_ship(self.__ai_board, candidate_ship) and count <= 1000:
+                    while not Game.__check_ship(self.ai_board, candidate_ship) and count <= 1000:
                         candidate_ship = [i, randint(1, 6), randint(1, 6), choice(self.__positions)]
                         count += 1
                     # размещение на доске корабля
                     if count <= 1000:
                         ship_temp = Ship(i, Dot(candidate_ship[1], candidate_ship[2]), candidate_ship[3])
-                        # str_ = ship_temp.get_ship()
-                        self.__ai_board.add_ship(ship_temp)
-                        # t_s_ = [x.get_ship() for x in self.__ai_board.ships]
-                        self.__ai_board.num_live_ship += 1
-                        # print(self.__ai_board.show())
+                        str_ = ship_temp.get_ship()
+                        self.ai_board.add_ship(ship_temp)
+                        t_s_ = [x.get_ship() for x in self.ai_board.ships]
+                        self.ai_board.num_live_ship += 1
+
+                        # print(self.ai_board.show())
                         count = 0
                         candidate_ship = []
                         del ship_temp
                     else:
-                        del self.__ai_board
-                        self.__ai_board = Board()
+                        del self.ai_board
+                        self.ai_board = Board()
                         print(f'Еще одна попытка ({num_gen}) генерации доски для ИИ')
                         num_gen += 1
-                        # print(self.__user_board.show())
+                        # print(self.ai_board.show())
                         count = 0
                         candidate_ship = []
                         break_point = True
@@ -392,14 +411,19 @@ class Game:
                 board_created = False
             else:
                 board_created = True
-        print("-----------------Ваша доска с кораблям----------")
-        print(self.__user_board.show())
-        print('--------Доска для ИИ (корабли скрыты)-----------')
-        self.__ai_board.set_hid(True)
-        print(self.__ai_board.show())
+
+        self.user = User(self.user_board, self.ai_board)
+        self.ai = Ai(self.ai_board, self.user_board)
+
+        print("-----------------Ваша доска с кораблям----------------")
+        print(self.user_board.show())
+        print('--------Доска ИИ (корабли противника скрыты)-----------')
+        # self.ai_board.set_hid(True)
+        self.ai_board.set_hid(False)  # на время тестирования
+        print(self.ai_board.show())
 
     def greet(self):
-        print('----------------------Добро пожаловать в игру Морской бой!---------------------------')
+        print('----------------------Добро пожаловать в игру Морской бой с ИИ!----------------------')
         print('|Правила:                                                                            |')
         print('|1. Сейчас ИИ (искуственный интеллект) сгенерирует 2 поля боя - доски размером 6 х 6 |')
         print('|2. На каждой доске (у ИИ и у Вас) будет находиться следующее количество кораблей:   |')
@@ -409,8 +433,28 @@ class Game:
         print('|3. Для осуществления выстрела необходимо ввести координаты точки в формате: 1 2     |')
         print('|4. В случае попадания, корабль противника будет отмечен знаком: Х                   |')
         print('|5. В случае промаха, точка на поле будет отмечена знаком: Т                         |')
-        input('--------------Теперь Вы все знаете:) Удачи, для начала нажмите Enter-----------------')
+        print('--------------Теперь Вы все знаете:) Удачи, для начала игры нажмите Enter-------------\n')
+        _ = input('')
 
+    def boards_show(self):
+        print("-----------------Ваша доска с кораблям-----------------")
+        print(self.user_board.show())
+        print('--------Доска ИИ (корабли противника скрыты)-----------')
+        print(self.ai_board.show())
+
+    def loop(self):
+
+        # self.boards_show()
+        while self.user_board.num_live_ship != 0 or self.ai_board.num_live_ship != 0:
+            got_ = True
+            while got_ and self.user_board.num_live_ship != 0:
+                got_ = game_1.user.move()
+                self.boards_show()
+            # print('Искусственный интеллект делает выстрел')
+            got_ = True
+            while got_ and self.ai_board.num_live_ship != 0:
+                got_ = game_1.ai.move()
+                self.boards_show()
 
 # ship_1 = Ship(2, Dot(1, 1), "vert")
 #
@@ -440,3 +484,11 @@ class Game:
 game_1 = Game()
 game_1.greet()
 game_1.random_board()
+# game_1.ai_board.set_hid(False)
+# game_1.ai.move()
+# game_1.user.move()
+# print("-----------------Ваша доска с кораблям----------")
+# print(game_1.user_board.show())
+# print('--------Доска ИИ (корабли противника скрыты)-----------')
+# print(game_1.ai_board.show())
+game_1.loop()

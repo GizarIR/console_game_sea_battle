@@ -1,9 +1,24 @@
+class Player:
+    def ask(self):
+        pass
 
-for i in range(5):
-    for j in range(5):
-        if j == 3:
-            print('pass')
-            break
-        print(i, j)
-    print(i)
+    def move(self):
+        self.ask()
+
+class User(Player):
+    def ask(self):
+        print('Печать из User')
+
+class Ai(Player):
+    def ask(self):
+        print('Печать из Ai')
+
+a_ = User()
+
+b_ = Ai()
+
+a_.ask()
+b_.ask()
+
+
 
