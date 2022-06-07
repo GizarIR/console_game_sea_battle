@@ -177,6 +177,11 @@ class Board:
             else:
                 if self.__b_status[x - 1][y - 1] == "■":
                     self.__b_status[x - 1][y - 1] = "X"
+                    for ship_ in self.ships:
+                        if Dot(x - 1, y - 1) in ship_.__health:
+                            ship_.__health.pop(Dot(x - 1, y - 1))
+                        if ship_.__health == []:
+                            print(f'{ship_.get_ship()[0]}-х палубный корабль подбит ')
                     player_need_shot = True
                     return True, player_need_shot
                 else:
@@ -303,28 +308,27 @@ class Game:
 
     # генератор случайных досок. 1 корабль на 3 клетки, 2 корабля на 2 клетки, 4 корабля на одну клетку.
     def random_board(self):
+        print("Пожалуйста, подoждите минутку. Генерируем доски...")
+        num_ship = [0, 4, 2, 1, 0]  # количество кораблей (значение элемента) в зависимости от количества палуб (индекс)
         # создадим доску для человека
         count = 0
+        num_gen = 1
         candidate_ship = []
-        num_ship = [0, 3, 2, 0, 1]  # количество кораблей (значение элемента) в зависимости от количества палуб (индекс)
         break_point = False
         board_created = False
         while not break_point and not board_created:
             for i in range(4, 0, -1):
-                if break_point:
-                    break_point = False
-                    break
                 for j in range(1, num_ship[i] + 1):
                     # подбор кандидата
-                    while not Game.__check_ship(self.__user_board, candidate_ship) and count <= 10000:
+                    while not Game.__check_ship(self.__user_board, candidate_ship) and count <= 1000:
                         candidate_ship = [i, randint(1, 6), randint(1, 6), choice(self.__positions)]
                         count += 1
                     # размещение на доске корабля
-                    if count != 10000:
+                    if count <= 1000:
                         ship_temp = Ship(i, Dot(candidate_ship[1], candidate_ship[2]), candidate_ship[3])
-                        str_ = ship_temp.get_ship()
+                        # str_ = ship_temp.get_ship()
                         self.__user_board.add_ship(ship_temp)
-                        t_s_ = [x.get_ship() for x in self.__user_board.ships]
+                        # t_s_ = [x.get_ship() for x in self.__user_board.ships]
                         self.__user_board.num_live_ship += 1
                         # print(self.__user_board.show())
                         count = 0
@@ -333,66 +337,93 @@ class Game:
                     else:
                         del self.__user_board
                         self.__user_board = Board()
-                        print(self.__user_board.show())
+                        print(f'Еще одна попытка ({num_gen}) генерации доски для Вас')
+                        # print(self.__user_board.show())
+                        num_gen += 1
                         count = 0
                         candidate_ship = []
-                        del ship_temp
                         break_point = True
                         break
-            board_created = True
-        print("Доска для человека")
-        print(self.__user_board.show())
+            if break_point:
+                break_point = False
+                board_created = False
+            else:
+                board_created = True
+        num_gen = 1
+        print("Доска для Вас сгенерирована.")
+        print("Генерируем доску для ИИ...")
+        # print(self.__user_board.show())
 
-        # создадим доску для AI (компьютера)
+        #создадим доску для AI (компьютера)
         count = 0
         candidate_ship = []
-        num_ship = [0, 3, 2, 0, 1]  # количество кораблей (значение элемента) в зависимости от количества палуб (индекс)
         break_point = False
         board_created = False
         while not break_point and not board_created:
             for i in range(4, 0, -1):
-                if break_point:
-                    break_point = False
-                    break
                 for j in range(1, num_ship[i] + 1):
                     # подбор кандидата
-                    while not Game.__check_ship(self.__ai_board, candidate_ship) and count <= 10000:
+                    while not Game.__check_ship(self.__ai_board, candidate_ship) and count <= 1000:
                         candidate_ship = [i, randint(1, 6), randint(1, 6), choice(self.__positions)]
                         count += 1
                     # размещение на доске корабля
-                    if count != 10000:
+                    if count <= 1000:
                         ship_temp = Ship(i, Dot(candidate_ship[1], candidate_ship[2]), candidate_ship[3])
                         # str_ = ship_temp.get_ship()
                         self.__ai_board.add_ship(ship_temp)
-                        # t_s_ = [x.get_ship() for x in self.__user_board.ships]
+                        # t_s_ = [x.get_ship() for x in self.__ai_board.ships]
                         self.__ai_board.num_live_ship += 1
-                        # print(self.__user_board.show())
+                        # print(self.__ai_board.show())
                         count = 0
                         candidate_ship = []
                         del ship_temp
                     else:
                         del self.__ai_board
                         self.__ai_board = Board()
-                        print(self.__ai_board.show())
+                        print(f'Еще одна попытка ({num_gen}) генерации доски для ИИ')
+                        num_gen += 1
+                        # print(self.__user_board.show())
                         count = 0
                         candidate_ship = []
-                        del ship_temp
                         break_point = True
                         break
-            board_created = True
-        print("Доска для компьютера")
+            if break_point:
+                break_point = False
+                board_created = False
+            else:
+                board_created = True
+        print("-----------------Ваша доска с кораблям----------")
+        print(self.__user_board.show())
+        print('--------Доска для ИИ (корабли скрыты)-----------')
+        self.__ai_board.set_hid(True)
         print(self.__ai_board.show())
+
+    def greet(self):
+        print('----------------------Добро пожаловать в игру Морской бой!---------------------------')
+        print('|Правила:                                                                            |')
+        print('|1. Сейчас ИИ (искуственный интеллект) сгенерирует 2 поля боя - доски размером 6 х 6 |')
+        print('|2. На каждой доске (у ИИ и у Вас) будет находиться следующее количество кораблей:   |')
+        print('|   -1 корабль на 3 клетки,                                                          |')
+        print('|   -2 корабля на 2 клетки,                                                          |')
+        print('|   -4 корабля на одну клетку.                                                       |')
+        print('|3. Для осуществления выстрела необходимо ввести координаты точки в формате: 1 2     |')
+        print('|4. В случае попадания, корабль противника будет отмечен знаком: Х                   |')
+        print('|5. В случае промаха, точка на поле будет отмечена знаком: Т                         |')
+        input('--------------Теперь Вы все знаете:) Удачи, для начала нажмите Enter-----------------')
+
 
 # ship_1 = Ship(2, Dot(1, 1), "vert")
 #
 # print(ship_1.get_ship())
 #
-# board_1 = Board()
+
 # board_2 = Board()
-# # print(board_1.show())
+# print(board_1.show())
 #
 # board_1.add_ship(ship_1)
-# ship_2 = Ship(4, Dot(6, 3), "horiz")
+
+# board_1 = Board()
+# ship_2 = Ship(2, Dot(1, 1), "horiz")
 # board_1.add_ship(ship_2)
 # print(board_1.show())
 # print([x.get_coord() for x in board_1.contour(ship_2)])
@@ -407,4 +438,5 @@ class Game:
 # print(board_1.show())
 
 game_1 = Game()
+game_1.greet()
 game_1.random_board()
