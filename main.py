@@ -8,6 +8,8 @@
 # 6 | ■ | О | ■ | О | О | О |
 from random import *
 
+import time
+
 
 class BoardOutException(Exception):
     """Обработка исключения: Вышли за пределы поля"""
@@ -194,13 +196,19 @@ class Board:
                 if (x, y) in ship_.get_ship()[3]:
                     ship_.set_health(Dot(x, y))
                     # s_2 = ship_.get_ship()[3]
-                if ship_.get_ship()[3] == []:
-                    print(f'\n  Поздравляем!!! {ship_.get_ship()[0]}-х палубный корабль подбит! \n ')
-                    self.num_live_ship -= 1
+                    if ship_.get_ship()[3] == []:
+                        print(f'>>>>>>>  {ship_.get_ship()[0]}-х палубный корабль подбит!  <<<<<<<<')
+                        self.num_live_ship -= 1
+                        if self.num_live_ship == 0:
+                            player_need_shot = False
+                            return True, player_need_shot
+                    else:
+                        print('\n ***** >> Есть попадание! << ***** \n')
             player_need_shot = True
             return True, player_need_shot
         else:
             self.__b_status[x - 1][y - 1] = "T"
+            print('\n ***** << Промахнулся >> ***** \n')
             player_need_shot = False
             return True, player_need_shot
 
@@ -248,6 +256,7 @@ class Ai(Player):
         x = randint(1, 6)
         y = randint(1, 6)
         print(f'Искусственный интеллект делает выстрел по координатам ({x}, {y})... \n')
+        time.sleep(3)
         return Dot(x, y)
 
 class User(Player):
@@ -328,6 +337,7 @@ class Game:
     def random_board(self):
         print("Пожалуйста, подoждите минутку. Генерируем доски...")
         num_ship = [0, 4, 2, 1, 0]  # количество кораблей (значение элемента) в зависимости от количества палуб (индекс)
+        # num_ship = [0, 0, 0, 1, 0] # чтобы не играть всю игру на период тестирования
         # создадим доску для человека
         count = 0
         num_gen = 1
@@ -418,22 +428,22 @@ class Game:
         print("-----------------Ваша доска с кораблям----------------")
         print(self.user_board.show())
         print('--------Доска ИИ (корабли противника скрыты)-----------')
-        # self.ai_board.set_hid(True)
-        self.ai_board.set_hid(False)  # на время тестирования
+        self.ai_board.set_hid(True)
+        # self.ai_board.set_hid(False)  # на время тестирования
         print(self.ai_board.show())
 
     def greet(self):
-        print('----------------------Добро пожаловать в игру Морской бой с ИИ!----------------------')
-        print('|Правила:                                                                            |')
-        print('|1. Сейчас ИИ (искуственный интеллект) сгенерирует 2 поля боя - доски размером 6 х 6 |')
-        print('|2. На каждой доске (у ИИ и у Вас) будет находиться следующее количество кораблей:   |')
-        print('|   -1 корабль на 3 клетки,                                                          |')
-        print('|   -2 корабля на 2 клетки,                                                          |')
-        print('|   -4 корабля на одну клетку.                                                       |')
-        print('|3. Для осуществления выстрела необходимо ввести координаты точки в формате: 1 2     |')
-        print('|4. В случае попадания, корабль противника будет отмечен знаком: Х                   |')
-        print('|5. В случае промаха, точка на поле будет отмечена знаком: Т                         |')
-        print('--------------Теперь Вы все знаете:) Удачи, для начала игры нажмите Enter-------------\n')
+        print('|----------------------Добро пожаловать в игру Морской бой с ИИ!-----------------------|')
+        print('| Правила:                                                                             |')
+        print('| 1. Сейчас ИИ (искусственный интеллект) сгенерирует 2 поля боя - доски размером 6 х 6 |')
+        print('| 2. На каждой доске (у ИИ и у Вас) будет находиться следующее количество кораблей:    |')
+        print('|    -1 корабль на 3 клетки,                                                           |')
+        print('|    -2 корабля на 2 клетки,                                                           |')
+        print('|    -4 корабля на одну клетку.                                                        |')
+        print('| 3. Для осуществления выстрела необходимо ввести координаты точки в формате: 1 2      |')
+        print('| 4. В случае попадания, корабль противника будет отмечен знаком: Х                    |')
+        print('| 5. В случае промаха, точка на поле будет отмечена знаком: Т                          |')
+        print('|--------------Теперь Вы все знаете:) Удачи, для начала игры нажмите Enter-------------|\n')
         _ = input('')
 
     def boards_show(self):
@@ -445,17 +455,28 @@ class Game:
     def loop(self):
 
         # self.boards_show()
-        while self.user_board.num_live_ship != 0 or self.ai_board.num_live_ship != 0:
+        while self.user_board.num_live_ship != 0 and self.ai_board.num_live_ship != 0:
             got_ = True
             while got_ and self.user_board.num_live_ship != 0:
                 got_ = game_1.user.move()
                 self.boards_show()
-            # print('Искусственный интеллект делает выстрел')
             got_ = True
             while got_ and self.ai_board.num_live_ship != 0:
                 got_ = game_1.ai.move()
                 self.boards_show()
 
+        if self.user_board.num_live_ship > 0 and self.ai_board.num_live_ship == 0:
+            print('|---------------------------------------------|')
+            print("| Поздравляем Вас с победой!!! Вы выиграли!!! |")
+            print('|---------------------------------------------|')
+        elif self.user_board.num_live_ship == 0 and self.ai_board.num_live_ship > 0:
+            print('|-----------------------------------------------------------------------------|')
+            print("|На этот раз Искусственный интеллект выиграл. Можно попробовать взять реванш;)|")
+            print('|-----------------------------------------------------------------------------|')
+        else:
+            print('|---------------------------------------------|')
+            print('| Возможно у вас с ИИ ничья или он сломался:) |')
+            print('|---------------------------------------------|')
 # ship_1 = Ship(2, Dot(1, 1), "vert")
 #
 # print(ship_1.get_ship())
@@ -482,7 +503,7 @@ class Game:
 # print(board_1.show())
 
 game_1 = Game()
-game_1.greet()
+# game_1.greet()
 game_1.random_board()
 # game_1.ai_board.set_hid(False)
 # game_1.ai.move()
