@@ -397,9 +397,9 @@ class Game:
                     # размещение на доске корабля
                     if count <= 1000:
                         ship_temp = Ship(i, Dot(candidate_ship[1], candidate_ship[2]), candidate_ship[3])
-                        str_ = ship_temp.get_ship()
+                        # str_ = ship_temp.get_ship()
                         self.ai_board.add_ship(ship_temp)
-                        t_s_ = [x.get_ship() for x in self.ai_board.ships]
+                        # t_s_ = [x.get_ship() for x in self.ai_board.ships]
                         self.ai_board.num_live_ship += 1
 
                         # print(self.ai_board.show())
@@ -432,6 +432,7 @@ class Game:
         # self.ai_board.set_hid(False)  # на время тестирования
         print(self.ai_board.show())
 
+    # приветствие
     def greet(self):
         print('|----------------------Добро пожаловать в игру Морской бой с ИИ!-----------------------|')
         print('| Правила:                                                                             |')
@@ -443,26 +444,27 @@ class Game:
         print('| 3. Для осуществления выстрела необходимо ввести координаты точки в формате: 1 2      |')
         print('| 4. В случае попадания, корабль противника будет отмечен знаком: Х                    |')
         print('| 5. В случае промаха, точка на поле будет отмечена знаком: Т                          |')
-        print('|--------------Теперь Вы все знаете:) Удачи, для начала игры нажмите Enter-------------|\n')
-        _ = input('')
+        input('|--------------Теперь Вы все знаете:) Удачи, для начала игры нажмите Enter-------------|\n')
 
+    # рисуем пару досок для диалога в игровом цикле loop
     def boards_show(self):
         print("-----------------Ваша доска с кораблям-----------------")
         print(self.user_board.show())
         print('--------Доска ИИ (корабли противника скрыты)-----------')
         print(self.ai_board.show())
 
+    # игровой цикл в результате которого определим победителя
     def loop(self):
-
+        self.random_board()
         # self.boards_show()
         while self.user_board.num_live_ship != 0 and self.ai_board.num_live_ship != 0:
             got_ = True
             while got_ and self.user_board.num_live_ship != 0:
-                got_ = game_1.user.move()
+                got_ = self.user.move()
                 self.boards_show()
             got_ = True
             while got_ and self.ai_board.num_live_ship != 0:
-                got_ = game_1.ai.move()
+                got_ = self.ai.move()
                 self.boards_show()
 
         if self.user_board.num_live_ship > 0 and self.ai_board.num_live_ship == 0:
@@ -477,39 +479,45 @@ class Game:
             print('|---------------------------------------------|')
             print('| Возможно у вас с ИИ ничья или он сломался:) |')
             print('|---------------------------------------------|')
-# ship_1 = Ship(2, Dot(1, 1), "vert")
-#
-# print(ship_1.get_ship())
-#
 
-# board_2 = Board()
-# print(board_1.show())
-#
-# board_1.add_ship(ship_1)
+    # метод запускающий игру
+    def start(self):
+        self.greet()
+        self.loop()
 
-# board_1 = Board()
-# ship_2 = Ship(2, Dot(1, 1), "horiz")
-# board_1.add_ship(ship_2)
-# print(board_1.show())
-# print([x.get_coord() for x in board_1.contour(ship_2)])
 
-# dot_1 = Dot(1, 1)
-# ship_3 = Ship(4, Dot(6, 3), "horiz")
-# board_2.add_ship(ship_3)
-# # player_1 = User(board_2, board_1)
-# player_1 = Ai(board_2, board_1)
-# f_1 = player_1.move()
-# print(board_1.shot(dot_1))
-# print(board_1.show())
+game = Game()
+game.start()
 
-game_1 = Game()
-# game_1.greet()
-game_1.random_board()
-# game_1.ai_board.set_hid(False)
-# game_1.ai.move()
-# game_1.user.move()
-# print("-----------------Ваша доска с кораблям----------")
-# print(game_1.user_board.show())
-# print('--------Доска ИИ (корабли противника скрыты)-----------')
-# print(game_1.ai_board.show())
-game_1.loop()
+# код для тестирования классов, методов и атрибутов
+if __name__ == "__main__":
+    print()
+    # ship_1 = Ship(2, Dot(1, 1), "vert")
+    # print(ship_1.get_ship())
+    # board_2 = Board()
+    # print(board_1.show())
+    # board_1.add_ship(ship_1)
+    # board_1 = Board()
+    # ship_2 = Ship(2, Dot(1, 1), "horiz")
+    # board_1.add_ship(ship_2)
+    # print(board_1.show())
+    # print([x.get_coord() for x in board_1.contour(ship_2)])
+    # dot_1 = Dot(1, 1)
+    # ship_3 = Ship(4, Dot(6, 3), "horiz")
+    # board_2.add_ship(ship_3)
+    # # player_1 = User(board_2, board_1)
+    # player_1 = Ai(board_2, board_1)
+    # f_1 = player_1.move()
+    # print(board_1.shot(dot_1))
+    # print(board_1.show())
+    # game_1 = Game()
+    # game_1.greet()
+    # game_1.random_board()
+    # game_1.ai_board.set_hid(False)
+    # game_1.ai.move()
+    # game_1.user.move()
+    # print("-----------------Ваша доска с кораблям----------")
+    # print(game_1.user_board.show())
+    # print('--------Доска ИИ (корабли противника скрыты)-----------')
+    # print(game_1.ai_board.show())
+    # game_1.loop()
